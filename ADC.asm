@@ -1,5 +1,5 @@
 #include p18f87k22.inc
-
+;modif Julie
     global ADC_Setup, ADC_Read
     global ADC_mul_8_16
     global Factor_8_bit, LowBitFactor_16_bit, HighBitFactor_16_bit
