@@ -1,6 +1,4 @@
-# Microprocessors
-Repository for Physics Year 3 microprocessors lab
+# Semi-auto Fan
 
-A simple assembly program for PIC18 microprocessor
-
-Uses simple interrupts from timer0 to count up on PORTD
+Compile the code and run it.
+Then swith on the Fan and uses the keypad to uses the device.
