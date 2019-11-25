@@ -152,9 +152,9 @@ Motor    code
     return
     
 check_fan
-    bsf TRISC,6
+    bsf TRISC,6		 
     movf PORTC, W
-    movwf fan_state
+    movwf fan_state	;fan_state = PORTC, with PORTC6=1 if on and 0 if off
     return
     
     end
