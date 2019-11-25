@@ -1,3 +1,8 @@
+;Created on Fri Nov 22 2019
+;version: 5
+;@author: Julie Laguerre, Oscar Gravier
+;Function: This file contains the main code to control the device.
+
 #include p18f87k22.inc
 
 ;extern keypad
@@ -13,7 +18,6 @@ extern ADC_Setup, ADC_Read
 extern ADC_mul_16_16
 extern LowBitFactor_1_16_bit, HighBitFactor_1_16_bit, LowBitFactor_2_16_bit, HighBitFactor_2_16_bit
 extern ADC_HexToDec
-extern LCD_HexToDec_Display
 extern LCD_Temperature_Display
 extern LowDecimal, MiddleLowDecimal, MiddleHighDecimal, HighDecimal
 extern Temperature_reading
@@ -91,22 +95,10 @@ call stepper_step
 call Keypad_reading
  
 ;read the Keypad_touch variable and call function in function of this
-;1-start/go to temperature speed : * (0E,70)
-;2-stop everythings: 0     (0E,B0)
 ;3-Faster : B     (0B,E0)
 ;4-Lower : C     (0D,E0)
 ;5-start rotating : 4     (0B,70)
 ;6-Stop rotating : 5     (0B,B0)
-
-;if keypad_touch=1 call temperature_speed  -> set speed fan to temperature_speed
-;if keypad_touch=2 call stop_fan   -> set all to zero : speed = 0 and rotating speed =0
-;if keypad_touch=3 call increase_speed -> ad a constant to Speed_manual
-;if keypad_touch=4 call decrease_speed -> remove a constant to Speed_manual
-;if keypad_touch=5 call start_rotating -> set Speed_rotation to the choice value (by us)
-;if keypad_touch=6 call stop_rotating -> set Speed_rotation to zero
-; At the end of each if : keypad_touch is set to 0
-
-;at the end, set keypad_touch to 0 so no double reading
 
 ;then display Speed_manual and Sensor_temperature
 ;goto $ -> do it again !
@@ -118,8 +110,8 @@ movlw 0x01
  goto if2
     call temperature_speed
     clrf Keypad_touch
-    movlw 0x00		    ; set speed_state to 0 (temperature one)
-    movwf speed_state
+    movlw 0x00		    	; set speed_state to 0 (temperature one)
+    movwf speed_state		
     goto ifend
    
 ; if1
@@ -127,7 +119,7 @@ movlw 0x01
 ; cpfseq keypad_touch
 ; goto if2
 ;    call temperature_speed
-;    bcf keypad_touch
+;    bcf keypad_touch		;at the end, set keypad_touch to 0 so no double reading
 ;    goto ifend
     
  if2
