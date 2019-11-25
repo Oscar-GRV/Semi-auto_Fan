@@ -1,3 +1,9 @@
+;Created on Fri Nov 22 2019
+;version: 5
+;@author: Julie Laguerre, Oscar Gravier
+;function:	The role of this file is to convert the hexadecimal value of the temperature to a decimal value,
+		; and to store the four digits in HighDecimal, MiddleHighDecimal, MiddleLowDecimal, LowDecimal
+
 #include p18f87k22.inc
 
     global ADC_Setup, ADC_Read
@@ -36,10 +42,10 @@ HighBitResult_8_16	res 1   ; reserve one byte for the second middle bit of the r
 
 	
 ; 16x16 multiplication
-LowBitFactor_1_16_bit	res 1
-HighBitFactor_1_16_bit	res 1
-LowBitFactor_2_16_bit	res 1
-HighBitFactor_2_16_bit	res 1
+LowBitFactor_1_16_bit	res 1 ; reserves one byte for LowBitFactor_1_16_bit
+HighBitFactor_1_16_bit	res 1 ; reserves one byte for HighBitFactor_1_16_bit
+LowBitFactor_2_16_bit	res 1 ; reserves one byte for LowBitFactor_2_16_bit
+HighBitFactor_2_16_bit	res 1 ; reserves one byte for HighBitFactor_2_16_bit
 	
 LowBit_1_16_16	    res 1 ; reserves one byte for low bit of the 8x16 multiplication of low bit of factor 2 by factor 1
 MiddleBit_1_16_16    res 1 ; reserves one byte for middle bit of the 8x16 multiplication of low bit of factor 2 by factor 1	
@@ -77,7 +83,7 @@ LowDecimal	    res 1
 			    
 ADC    code
     
-ADC_Setup
+ADC_Setup ; sets up the ADC to receive an input from pin A3
     bsf	    TRISA,RA3	    ; use pin A3(==AN3) for input: it is the LM35 port04
     clrf    ANCON0
     bsf	    ANCON0,ANSEL3   ; set A3 to analog
@@ -90,7 +96,7 @@ ADC_Setup
     return
 
     
-ADC_Read
+ADC_Read ; reads the analog value from pin A3 and converts it to a digital value stored in ADRESH:ADRESL
     bsf	    ADCON0,GO	    ; Start conversion
 adc_loop
     btfsc   ADCON0,GO	    ; check to see if finished
@@ -117,7 +123,7 @@ ADC_mul_8_16 ; fill in Factor_8_bit, LowBitFactor_16_bit and HighBitFactor_16_bi
     addwf MiddleBit_2_8_16, 0 ;with 0, the result is stored back in W
     movwf MiddleBitResult_8_16 ; the middle bit result is stored into MiddleBitResult_8_16
     movlw 0x00
-    addwfc HighBit_NO_CARRY_8_16, 0 ;;with 0, the result is stored back in W
+    addwfc HighBit_NO_CARRY_8_16, 0 ;with 0, the result is stored back in W
     movwf HighBitResult_8_16 ; the high bit result is stored into HighBitResult_8_16
 
     return
@@ -127,13 +133,13 @@ ADC_mul_16_16 ; fill in LowBitFactor_1_16_bit, HighBitFactor_1_16_bit, LowBitFac
     movff LowBitFactor_2_16_bit, Factor_8_bit
     movff LowBitFactor_1_16_bit, LowBitFactor_16_bit
     movff HighBitFactor_1_16_bit, HighBitFactor_16_bit
-    call ADC_mul_8_16		; 0x8A x 0xBEEF
+    call ADC_mul_8_16		; multiplies 8-bit LowBitFactor_2_16_bit by 16-bit Factor_1
     movff LowBitResult_8_16, LowBitResult_16_16 ; the result is directly put into Result
     movff MiddleBitResult_8_16, MiddleBit_1_16_16
     movff HighBitResult_8_16, HighBit_1_16_16
 	
     movff HighBitFactor_2_16_bit, Factor_8_bit
-    call ADC_mul_8_16		; 0x41 x 0xBEEF
+    call ADC_mul_8_16		; multiplies 8-bit HighBitFactor_2_16_bit by 16-bit Factor_1
     movff LowBitResult_8_16, LowBit_2_16_16
     movff MiddleBitResult_8_16, MiddleBit_2_16_16
     movff HighBitResult_8_16, HighBit_2_16_16
@@ -176,6 +182,7 @@ ADC_mul_8_24 ; fill in Factor_8_bit, LowBitFactor_24_bit, MiddleBitFactor_24_bit
     
     return
 
+; follows the steps given in the 9th Microprocessors course
 ADC_HexToDec ; fill in LowBitFactor_1_16_bit, HighBitFactor_1_16_bit, LowBitFactor_2_16_bit and HighBitFactor_2_16_bit in the main
     call ADC_mul_16_16
     
@@ -209,35 +216,5 @@ ADC_HexToDec ; fill in LowBitFactor_1_16_bit, HighBitFactor_1_16_bit, LowBitFact
     
     return
     
-;ADC_HexToDec_ANCIEN ;put the Hex in as : first bit in 0x51 and  second in 0x52
-    ;call ADC_mul_16_16
-    ;34 is the first dec
-    ;movff 0x31, 0x51
-    ;movff 0x32, 0x52
-    ;movff 0x33, 0x53
-    ;movlw 0x0A
-    ;call ADC_mul_8_24
-    ;F4 is the second dec, we put in in 0x1A
-    ;movff 0x4F,0x1A
-    
-    ;movff 0x1F, 0x51
-    ;movff 0x2F, 0x52
-    ;movff 0x3F, 0x53
-    ;movlw 0x0A
-    ;call ADC_mul_8_24
-    ;F4 is the 3rd dec, we put it in 0x2A
-    ;movff 0x4F,0x2A
-    
-    ;movff 0x1F, 0x51
-    ;movff 0x2F, 0x52
-    ;movff 0x3F, 0x53
-    ;movlw 0x0A
-    ;call ADC_mul_8_24
-    ;F4 is the 4th dec, we put it in 0x3A
-    ;movff 0x4F,0x3A
-    
-    ;decimal number is in 34,1A,2A,3A
-    
-    ;return
     
     end
