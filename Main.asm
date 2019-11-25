@@ -86,7 +86,7 @@ movlw 0x01
 cpfseq speed_state
 call temperature_speed
 
-;roatation of the fan if rotating_mode = 1
+;Rotation of the fan if rotating_mode = 1
 movlw 0x00
 cpfseq rotating_mode  
 call stepper_step
@@ -101,62 +101,51 @@ call Keypad_reading
 ;6-Stop rotating : 5     (0B,B0)
 
 ;then display Speed_manual and Sensor_temperature
-;goto $ -> do it again !
-
-;if fonction to decomented
 
 movlw 0x01
- cpfseq Keypad_touch
+ cpfseq Keypad_touch		;if keypad_touch=0X01 set speed_state to 0 to be in temperature speed mode
  goto if2
     call temperature_speed
     clrf Keypad_touch
     movlw 0x00		    	; set speed_state to 0 (temperature one)
     movwf speed_state		
     goto ifend
-   
-; if1
-; movlw 0x02
-; cpfseq keypad_touch
-; goto if2
-;    call temperature_speed
-;    bcf keypad_touch		;at the end, set keypad_touch to 0 so no double reading
-;    goto ifend
     
  if2
  movlw 0x03
- cpfseq Keypad_touch
+ cpfseq Keypad_touch		;if keypad_touch=0X03 call increase_speed function
  goto if3
     call increase_speed
     clrf Keypad_touch
-    movlw 0x01		    ; set speed_state to 1 (temperature one)
+    movlw 0x01		    	; set speed_state to 1 (temperature one)
     movwf speed_state
     goto ifend
 
  if3
  movlw 0x04
- cpfseq Keypad_touch
+ cpfseq Keypad_touch		;if keypad_touch=0X04 call decrease_speed function
  goto if4
     call decrease_speed
     clrf Keypad_touch
-    movlw 0x01		    ; set speed_state to 1 (temperature one)
+    movlw 0x01		    	; set speed_state to 1 (temperature one)
     movwf speed_state
     goto ifend
 
  if4
  movlw 0x05
- cpfseq Keypad_touch
+ cpfseq Keypad_touch		;if keypad_touch=0X05 rotating mode on
  goto if5
     clrf Keypad_touch
-    movlw 0x01		    ; set rotating_mode to 1 (temperature one)
+    movlw 0x01		    	; set rotating_mode to 1 (temperature one)
     movwf rotating_mode
     goto ifend
     
  if5
  movlw 0x06
- cpfseq Keypad_touch
+ cpfseq Keypad_touch		;if keypad_touch=0X06 rotating mode off
  goto ifend
     clrf Keypad_touch
-    movlw 0x00		    ; set rotating_mode to 0 (temperature one)
+    movlw 0x00		   	; set rotating_mode to 0 (temperature one)
     movwf rotating_mode
    goto ifend
    
