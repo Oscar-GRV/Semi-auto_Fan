@@ -1,3 +1,8 @@
+;Created on Fri Nov 22 2019
+;version: 5
+;@author: Julie Laguerre, Oscar Gravier
+;Function: This file contains the functions to control the motors of the device.
+
 #include p18f87k22.inc
 
     global  stepper_step, Motor_step, step_counter ;start_fan, stop_fan, start_rotating,stop_rotating
@@ -17,7 +22,7 @@
     
 Motor    code
     
-    ;Fonctions to control the fan speed :
+    	;;;;Fonctions to control the fan speed;;;;
     ;3 different speeds :
     ;Speed_manual=1, settings :
     ;Speed_manual=2, settings :
@@ -39,45 +44,45 @@ Motor    code
 	
     temperature_speed
 	movlw 0x02		
-	cpfsgt HighDecimal
-	goto temperature_if1
-		movlw 0x03
-		movwf Speed_manual
-		call set_speed	    ;to set the speed at this new value
-		goto temperature_end
+	cpfsgt HighDecimal		;if TemperatureHigh=1 skip next line
+	goto temperature_if1		;go to temperature_if1 and skip the rest
+		movlw 0x03		;equivalent to 30 degrees
+		movwf Speed_manual	;if TemperatureLow>30 degrees skip next line
+		call set_speed	    	;to set the speed at this new value
+		goto temperature_end	;go to the end of the routine
 		
 	temperature_if1 ;go here if the high byte is 0x00  
-	movlw 0x02
-	cpfslt HighDecimal
-	goto temperature_if2
+	movlw 0x02		;equivalent to 20 degrees
+	cpfslt HighDecimal	;if TemperatureLow<20 degrees skip next line
+	goto temperature_if2	;go to temperature_if2 and skip the rest
 		movlw 0x01
-		movwf Speed_manual
-		call set_speed	    ;to set the speed at this new value   
-		goto temperature_end
+		movwf Speed_manual	;set Speed_manual to 1 (speed 1)
+		call set_speed	    	;to set the speed at this new value   
+		goto temperature_end	;go to the end of the routine
 	
 	temperature_if2
-	    movlw 0x02
-	    movwf Speed_manual
-	    call set_speed	    ;to set the speed at this new value   
+	    movlw 0x02			;if 20°C<TemperatureLow<30°C
+	    movwf Speed_manual		;set Speed_manual to 2 (speed 2)
+	    call set_speed	    	;to set the speed at this new value   
 	    goto temperature_end
 	
 	temperature_end
 	return
 	   
-    set_speed
+    set_speed		;This function change the setting to have each speed
 	movlw 0x02
-	cpfslt Speed_manual ;if Speed_manual=1 set the fan at the speed 1
-	goto set_speed_if1
+	cpfslt Speed_manual 	;if Speed_manual=1 set the fan at the speed 1
+	goto set_speed_if1	;go to the next comparison
     
 	    movlw 0xFF ;Set the PWM PERIOD
 	    movwf PWM_period
 
 	    
-	    movlw B'00000110' ;time prescaler : last 2bit : 00 =1 01=4 10=16
+	    movlw B'00000110' 		;time prescaler = 16 (last two bits = '1x')
 	    movwf PWM_time_pres
 	    
 	    movlw 0x01
-	    movwf PWM_duty
+	    movwf PWM_duty		;set the duty cycle
 	    call Motor_PWM
 	    goto set_speed_ifend 
 	    
@@ -88,36 +93,75 @@ Motor    code
 	    movlw 0x17 ;Set the PWM PERIOD
 	    movwf PWM_period
 	    
-	    movlw B'00000110' ;time prescaler : last 2bit : 00 =1 01=4 10=16
+	    movlw B'00000110' 		;time prescaler = 16 (last two bits = '1x')
 	    movwf PWM_time_pres
 	    
 	    movlw 0x10
-	    movwf PWM_duty
+	    movwf PWM_duty		;set the duty cycle
 	    call Motor_PWM
 	    
 	    goto set_speed_ifend
     
 	set_speed_if2
 	movlw 0x02
-	cpfsgt Speed_manual ;if Speed_manual=3 set the fan at the speed 3
-	goto set_speed_ifend
-	    movlw 0x17 ;Set the PWM PERIOD
+	cpfsgt Speed_manual 		;if Speed_manual=3 set the fan at the speed 3
+	goto set_speed_ifend		;go to the end of the routine
+	    movlw 0x17 			;Set the PWM PERIOD
 	    movwf PWM_period
 
-	    movlw B'00000110' ;time prescaler : last 2bit : 00 =1 01=4 10=16
+	    movlw B'00000110' 		;time prescaler = 16 (last two bits = '1x')
 	    movwf PWM_time_pres
 	    
 	    movlw 0x14
-	    movwf PWM_duty
+	    movwf PWM_duty	;set the duty cycle
 	    call Motor_PWM
 	    
 	set_speed_ifend
 	return 
 	
-	
-    ;fonction to control the rotation :
+	 Motor_PWM
+    ;;;SET PWM FREQUENCY;;;
+	MOVF PWM_period,W ;SET PR2 TO 128 DECIMAL SO THE PWM PERIOD = 2064uS => PWM FREQUENCY = 484Hz
+	MOVWF PR2
+
+    ;;;SET PWM STARTING DUTY CYCLE;;;
+	movf PWM_duty, W
+	movwf CCPR4L
+
+	bsf CCP4CON,DC4B1  ;CCP1CON5
+	bsf CCP4CON,DC4B0  ;CCP1CON4
     
-    ;stepper_step
+    ;;;SET PWM PIN TO OUTPUT MODE;;;
+	setf TRISG
+	movlw 0x00
+	movwf TRISG, ACCESS
+	
+    ;;;SET TIMER 2 PRESCALE VALUE;;;
+	MOVf PWM_time_pres, W
+	MOVWF T2CON
+
+	;;;CLEAR TIMER 2 MODULE;;;
+	CLRF TMR2
+	
+	;;;ENABLE TIMER 2 MODULE;;;
+	BSF T2CON, TMR2ON
+	BCF PMD3,CCP4MD
+	bsf CCP4CON, CCP4M3
+	bsf CCP4CON, CCP4M2
+	
+    return
+    
+check_fan
+    bsf TRISC,6
+    movf PORTC, W
+    movwf fan_state
+    return
+    
+    end
+	
+	
+   		;;;;Fonction to control the rotation;;;;
+   
     ;Each call will do a step in the rotation.
 	
 	;step 1 : red=-;yellow=-;green=+,blue=+
@@ -313,49 +357,3 @@ Motor    code
 
 	
 	return
-	
-
-    ;PWM PERIOD = [(PR2)+1] * 4 * TOSC * (TMR2 PRESCALE VALUE) ;PR2 = TMR2 PERIOD REGISTER, TOSC = PIC CLOCK PERIOD (FOSC = 1 / TOSC)
-    ;PWM DUTY CYCLE = (CCPR1L:CCP1CON<5:4>) * TOSC * (TMR2 PRESCALE VALUE)
-    
-    Motor_PWM
-    ;;;SET PWM FREQUENCY;;;
-	MOVF PWM_period,W ;SET PR2 TO 128 DECIMAL SO THE PWM PERIOD = 2064uS => PWM FREQUENCY = 484Hz
-	MOVWF PR2
-
-    ;;;SET PWM STARTING DUTY CYCLE;;;
-	movf PWM_duty, W
-	movwf CCPR4L
-
-	bsf CCP4CON,DC4B1  ;CCP1CON5
-	bsf CCP4CON,DC4B0  ;CCP1CON4
-    
-    ;;;SET PWM PIN TO OUTPUT MODE;;;
-	setf TRISG
-	movlw 0x00
-	movwf TRISG, ACCESS
-	
-    ;;;SET TIMER 2 PRESCALE VALUE;;;
-	;PRESCALE = 16 SO THE PWM PERIOD = 2064uS => PWM FREQUENCY = 484Hz
-	MOVf PWM_time_pres, W
-	MOVWF T2CON
-
-	;;;CLEAR TIMER 2 MODULE;;;
-	CLRF TMR2
-	
-	;;;ENABLE TIMER 2 MODULE;;;
-	BSF T2CON, TMR2ON
-	
-	BCF PMD3,CCP4MD
-	bsf CCP4CON, CCP4M3
-	bsf CCP4CON, CCP4M2
-	
-    return
-    
-check_fan
-    bsf TRISC,6
-    movf PORTC, W
-    movwf fan_state
-    return
-    
-    end
